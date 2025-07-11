@@ -1,42 +1,41 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const axios = require('axios');
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Konfigurasi API Pterodactyl
-const PANEL_URL = "https://kenja-ganteng.kenjaapublik.my.id/"; // Ganti dengan domain panel Pterodactyl kamu
-const API_KEY = "ptla_ciMjgQ3JNtpomlFwyoMlCiCAK0I4P8H0e0KrYN3kLf2"; // Ganti dengan Admin API Key Pterodactyl
+// GANTI DENGAN MILIKMU
+const PANEL_URL = 'https://kenja-ganteng.kenjaapublik.my.id/'; // HARUS HTTPS!
+const API_KEY = 'ptla_ciMjgQ3JNtpomlFwyoMlCiCAK0I4P8H0e0KrYN3kLf2'; // Application API Key
 
 app.use(bodyParser.json());
 
-// Fungsi untuk buat user
 async function createUser(payload) {
-  const response = await axios.post(
-    `${PANEL_URL}/api/application/users`,
-    {
+  try {
+    const res = await axios.post(`${PANEL_URL}/api/application/users`, {
       email: payload.email,
       username: payload.username,
       first_name: payload.first_name,
       last_name: payload.last_name,
       password: payload.password
-    },
-    {
+    }, {
       headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
+        Authorization: `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       }
-    }
-  );
-  return response.data;
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("❌ createUser error:", error.response?.data || error.message);
+    throw new Error(JSON.stringify(error.response?.data || { message: "Gagal buat user" }));
+  }
 }
 
-// Fungsi untuk buat server
 async function createServer(payload) {
-  const response = await axios.post(
-    `${PANEL_URL}/api/application/servers`,
-    {
+  try {
+    const res = await axios.post(`${PANEL_URL}/api/application/servers`, {
       name: payload.name,
       user: payload.user,
       egg: payload.egg,
@@ -47,38 +46,50 @@ async function createServer(payload) {
       feature_limits: payload.feature_limits,
       deploy: payload.deploy,
       environment: payload.environment
-    },
-    {
+    }, {
       headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
+        Authorization: `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       }
-    }
-  );
-  return response.data;
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("❌ createServer error:", error.response?.data || error.message);
+    throw new Error(JSON.stringify(error.response?.data || { message: "Gagal buat server" }));
+  }
 }
 
-// Endpoint utama untuk relay
 app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
 
+  if (!action || !payload) {
+    return res.status(400).json({ error: "Request tidak lengkap!" });
+  }
+
   try {
-    if (action === "create_user") {
-      const data = await createUser(payload);
-      return res.json(data);
-    } else if (action === "create_server") {
-      const data = await createServer(payload);
-      return res.json(data);
+    let data;
+
+    if (action === 'create_user') {
+      data = await createUser(payload);
+    } else if (action === 'create_server') {
+      data = await createServer(payload);
     } else {
-      return res.status(400).json({ error: "Aksi tidak dikenal!" });
+      return res.status(400).json({ error: "Aksi tidak dikenali" });
     }
-  } catch (error) {
-    const err = error.response?.data || error.message;
-    return res.status(500).json({ errors: err });
+
+    return res.json(data);
+  } catch (err) {
+    console.error("❌ relay error:", err.message);
+    try {
+      return res.status(500).json({ errors: JSON.parse(err.message) });
+    } catch {
+      return res.status(500).json({ errors: { message: err.message } });
+    }
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ relay.js jalan di http://localhost:${PORT}`);
+  console.log(`🚀 relay.js running on http://localhost:${PORT}`);
 });
