@@ -1,29 +1,27 @@
-const express = require('express');
-const fetch = require('node-fetch');
-const app = express();
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-app.use(express.json());
-
-const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ganti sesuai milikmu
-const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/api/application";
-
-const headers = {
-  Authorization: API_KEY,
-  "Content-Type": "application/json",
-  Accept: "Application/vnd.pterodactyl.v1+json"
-};
-
-const routes = {
-  create_user: "/users",
-  create_server: "/servers"
-};
-
-app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
-  const endpoint = routes[action];
 
+  const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // Ganti dengan key kamu
+  const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/api/application";
+
+  const headers = {
+    Authorization: API_KEY,
+    "Content-Type": "application/json",
+    Accept: "Application/vnd.pterodactyl.v1+json"
+  };
+
+  const routes = {
+    create_user: "/users",
+    create_server: "/servers"
+  };
+
+  const endpoint = routes[action];
   if (!endpoint) {
-    return res.status(400).json({ success: false, error: "Invalid action" });
+    return res.status(400).json({ success: false, error: "❌ Invalid action" });
   }
 
   try {
@@ -33,9 +31,10 @@ app.post('/api/relay', async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const type = response.headers.get("content-type") || "";
-    const isJson = type.includes("application/json");
-    const data = isJson ? await response.json() : { raw: await response.text() };
+    const contentType = response.headers.get("content-type") || "";
+    const isJSON = contentType.includes("application/json");
+
+    const data = isJSON ? await response.json() : { raw: await response.text() };
 
     if (!response.ok) {
       return res.status(response.status).json({
@@ -53,16 +52,13 @@ app.post('/api/relay', async (req, res) => {
       });
     }
 
-    return res.json({ success: true, data });
+    return res.status(200).json({ success: true, data });
 
   } catch (err) {
     return res.status(500).json({
       success: false,
-      error: "Internal Relay Crash",
+      error: "Internal Relay Error",
       message: err.message
     });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ relay.js ready on http://localhost:${PORT}/api/relay`));
+}
