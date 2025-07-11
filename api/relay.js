@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 
 // Konfigurasi API Pterodactyl
 const PANEL_URL = "https://kenja-ganteng.kenjaapublik.my.id/"; // Ganti dengan domain panel Pterodactyl kamu
-const API_KEY = "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // Ganti dengan Admin API Key Pterodactyl
+const API_KEY = "ptla_ciMjgQ3JNtpomlFwyoMlCiCAK0I4P8H0e0KrYN3kLf2"; // Ganti dengan Admin API Key Pterodactyl
 
 app.use(bodyParser.json());
 
