@@ -4,8 +4,7 @@ const app = express();
 
 app.use(express.json());
 
-// Konfigurasi Pterodactyl
-const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // Ganti dengan API key Application kamu
+const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ganti sesuai milikmu
 const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/api/application";
 
 const headers = {
@@ -14,18 +13,17 @@ const headers = {
   Accept: "Application/vnd.pterodactyl.v1+json"
 };
 
-const endpoints = {
+const routes = {
   create_user: "/users",
   create_server: "/servers"
 };
 
-// Endpoint utama
 app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
+  const endpoint = routes[action];
 
-  const endpoint = endpoints[action];
   if (!endpoint) {
-    return res.status(400).json({ success: false, error: "❌ Invalid action" });
+    return res.status(400).json({ success: false, error: "Invalid action" });
   }
 
   try {
@@ -35,15 +33,14 @@ app.post('/api/relay', async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const contentType = response.headers.get("content-type") || "";
-    const isJSON = contentType.includes("application/json");
-
-    const data = isJSON ? await response.json() : { raw: await response.text() };
+    const type = response.headers.get("content-type") || "";
+    const isJson = type.includes("application/json");
+    const data = isJson ? await response.json() : { raw: await response.text() };
 
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-        error: "❌ API Error",
+        error: "Pterodactyl API error",
         details: data
       });
     }
@@ -51,24 +48,21 @@ app.post('/api/relay', async (req, res) => {
     if (!data.attributes) {
       return res.status(500).json({
         success: false,
-        error: "❌ Missing attributes in response",
+        error: "Missing attributes",
         raw: data
       });
     }
 
-    return res.status(200).json({ success: true, data });
+    return res.json({ success: true, data });
 
   } catch (err) {
     return res.status(500).json({
       success: false,
-      error: "❌ Internal relay error",
+      error: "Internal Relay Crash",
       message: err.message
     });
   }
 });
 
-// Jalankan server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Relay server running on http://localhost:${PORT}/api/relay`);
-});
+app.listen(PORT, () => console.log(`✅ relay.js ready on http://localhost:${PORT}/api/relay`));
