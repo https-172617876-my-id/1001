@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 // Pterodactyl Config
-const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ Jangan hapus "Bearer"
+const API_KEY = "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ Jangan hapus "Bearer"
 const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
 
 const headers = {
