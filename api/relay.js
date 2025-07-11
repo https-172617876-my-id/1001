@@ -4,7 +4,8 @@ const app = express();
 
 app.use(express.json());
 
-const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z";
+// Pterodactyl Config
+const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ Jangan hapus "Bearer"
 const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
 
 const headers = {
@@ -13,7 +14,7 @@ const headers = {
   Accept: "Application/vnd.pterodactyl.v1+json"
 };
 
-const endpointMap = {
+const endpoints = {
   create_user: "/users",
   create_server: "/servers"
 };
@@ -21,7 +22,7 @@ const endpointMap = {
 app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
 
-  const endpoint = endpointMap[action];
+  const endpoint = endpoints[action];
   if (!endpoint) {
     return res.status(400).json({ error: "❌ Invalid action." });
   }
@@ -35,12 +36,15 @@ app.post('/api/relay', async (req, res) => {
 
     const contentType = response.headers.get("content-type") || "";
     const isJSON = contentType.includes("application/json");
-    const data = isJSON ? await response.json() : { raw: await response.text() };
+
+    const data = isJSON
+      ? await response.json()
+      : { raw: await response.text() };
 
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-        error: "❌ API Error",
+        error: "❌ Pterodactyl API error",
         details: data
       });
     }
@@ -69,5 +73,5 @@ app.post('/api/relay', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 relay.js running on http://localhost:${PORT}/api/relay`);
+  console.log(`✅ Relay server running on http://localhost:${PORT}/api/relay`);
 });
