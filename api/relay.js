@@ -1,27 +1,29 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
+const express = require('express');
+const fetch = require('node-fetch');
+const app = express();
 
+app.use(express.json());
+
+const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z";
+const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
+
+const headers = {
+  Authorization: API_KEY,
+  "Content-Type": "application/json",
+  Accept: "Application/vnd.pterodactyl.v1+json"
+};
+
+const endpointMap = {
+  create_user: "/users",
+  create_server: "/servers"
+};
+
+app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
-
-  const API_KEY = "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z";
-  const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
-
-  const headers = {
-    Authorization: API_KEY,
-    "Content-Type": "application/json",
-    Accept: "Application/vnd.pterodactyl.v1+json"
-  };
-
-  const endpointMap = {
-    create_user: "/users",
-    create_server: "/servers"
-  };
 
   const endpoint = endpointMap[action];
   if (!endpoint) {
-    return res.status(400).json({ error: "❌ Invalid action" });
+    return res.status(400).json({ error: "❌ Invalid action." });
   }
 
   try {
@@ -32,25 +34,40 @@ export default async function handler(req, res) {
     });
 
     const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      const raw = await response.text();
-      return res.status(500).json({ error: "Invalid JSON response", raw });
-    }
-
-    const data = await response.json();
+    const isJSON = contentType.includes("application/json");
+    const data = isJSON ? await response.json() : { raw: await response.text() };
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: "Pterodactyl API error",
+        success: false,
+        error: "❌ API Error",
         details: data
       });
     }
 
-    return res.status(200).json(data);
+    if (!data || !data.attributes) {
+      return res.status(500).json({
+        success: false,
+        error: "Response missing expected 'attributes'",
+        raw: data
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+
   } catch (err) {
     return res.status(500).json({
-      error: "Relay error",
+      success: false,
+      error: "Internal relay error",
       message: err.message
     });
   }
-}
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 relay.js running on http://localhost:${PORT}/api/relay`);
+});
