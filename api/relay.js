@@ -4,9 +4,8 @@ const app = express();
 
 app.use(express.json());
 
-// Pterodactyl Config
-const API_KEY = "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ Jangan hapus "Bearer"
-const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
+const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ API key kamu
+const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/"; // ✅ domain kamu
 
 const headers = {
   Authorization: API_KEY,
@@ -21,11 +20,8 @@ const endpoints = {
 
 app.post('/api/relay', async (req, res) => {
   const { action, payload } = req.body;
-
   const endpoint = endpoints[action];
-  if (!endpoint) {
-    return res.status(400).json({ error: "❌ Invalid action." });
-  }
+  if (!endpoint) return res.status(400).json({ error: "Invalid action" });
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -44,28 +40,25 @@ app.post('/api/relay', async (req, res) => {
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-        error: "❌ Pterodactyl API error",
+        error: "API error",
         details: data
       });
     }
 
-    if (!data || !data.attributes) {
+    if (!data.attributes) {
       return res.status(500).json({
         success: false,
-        error: "Response missing expected 'attributes'",
+        error: "Missing attributes",
         raw: data
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      data
-    });
+    return res.status(200).json({ success: true, data });
 
   } catch (err) {
     return res.status(500).json({
       success: false,
-      error: "Internal relay error",
+      error: "Relay crash",
       message: err.message
     });
   }
@@ -73,5 +66,5 @@ app.post('/api/relay', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Relay server running on http://localhost:${PORT}/api/relay`);
+  console.log(`✅ relay.js running on http://localhost:${PORT}/api/relay`);
 });
