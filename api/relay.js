@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   const { action, payload } = req.body;
 
-  const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z";
+  const API_KEY = "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z";
   const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/";
 
   const headers = {
