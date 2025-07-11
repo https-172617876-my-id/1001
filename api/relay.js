@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 const API_KEY = "Bearer ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z"; // ✅ API key kamu
-const API_URL = "https://kenja-ganteng.kenjaapublik.my.id/"; // ✅ domain kamu
+const API_URL = "https://kenja-ganteng.kenjaapublik.my.id"; // ✅ domain kamu
 
 const headers = {
   Authorization: API_KEY,
