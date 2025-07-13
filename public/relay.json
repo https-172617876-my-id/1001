@@ -1,21 +1,20 @@
-{
-  "domainV2": "https://kenja-ganteng.kenjaapublik.my.id",
-  "apikeyV2": "apixxx",
-  "capikeyV2": "pltaxxx",
-  "eggV2": "15",
-  "nestidV2": "5",
-  "locV2": "1",
-  "dockerImage": "ghcr.io/parkervcp/yolks:nodejs_18",
-  "environment": {
-    "INST": "npm",
-    "USER_UPLOAD": "0",
-    "AUTO_UPDATE": "0",
-    "CMD_RUN": "npm start"
+page = {
+  domainV2: "https://kenja-ganteng.kenjaapublik.my.id",
+  apikeyV2: "apixxx",
+  eggV2: "15",
+  nestidV2: "5",
+  locV2: "1",
+  dockerImage: "ghcr.io/parkervcp/yolks:nodejs_18",
+  environment: {
+    INST: "npm",
+    CMD_RUN: "npm start",
+    USER_UPLOAD: "0",
+    AUTO_UPDATE: "0"
   },
-  "feature_limits": {
-    "databases": 5,
-    "backups": 5,
-    "allocations": 5
+  feature_limits: {
+    databases: 5,
+    backups: 5,
+    allocations: 5
   },
-  "io": 500
+  io: 500
 }
