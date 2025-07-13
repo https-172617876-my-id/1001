@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Auto Panel Creator</title>
+  <title>Auto Panel Creator (Client Side)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/relay.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
   <div class="max-w-md w-full bg-white p-6 rounded shadow">
@@ -33,12 +34,6 @@
     const result = document.getElementById("result");
     const error = document.getElementById("error");
 
-    async function getConfig() {
-      const res = await fetch("/relay.json");
-      if (!res.ok) throw new Error("relay.json not found!");
-      return await res.json();
-    }
-
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       result.classList.add("hidden");
@@ -47,13 +42,11 @@
       const username = document.getElementById("username").value.trim().toLowerCase();
       const plan = document.getElementById("plan").value;
       const specs = planSpecs[plan];
+      const config = page;
       const email = username + "@gmail.com";
       const password = username + "123";
 
       try {
-        const config = await getConfig();
-
-        // Create user
         const userRes = await fetch(config.domainV2 + "/api/application/users", {
           method: "POST",
           headers: {
@@ -74,7 +67,6 @@
         if (user.errors) throw new Error(user.errors[0].detail);
         const userId = user.attributes.id;
 
-        // Get egg startup
         const eggRes = await fetch(`${config.domainV2}/api/application/nests/${config.nestidV2}/eggs/${config.eggV2}`, {
           headers: {
             Authorization: "Bearer " + config.apikeyV2,
@@ -85,7 +77,6 @@
         const egg = await eggRes.json();
         if (egg.errors) throw new Error(egg.errors[0].detail);
 
-        // Create server
         const serverRes = await fetch(config.domainV2 + "/api/application/servers", {
           method: "POST",
           headers: {
