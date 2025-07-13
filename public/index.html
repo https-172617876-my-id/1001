@@ -40,18 +40,17 @@
       "unlimited-v2": { ram: "0", disk: "0", cpu: "0" }
     };
 
-    function capitalize(name) {
-      return name.charAt(0).toUpperCase() + name.slice(1);
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    function formatSpec(v) {
-      return v === "0" ? "Unlimited" : v / 1000 + "GB";
+    function formatSpec(value) {
+      return value === "0" ? "Unlimited" : value / 1000 + "GB";
     }
 
     async function fetchConfig() {
-      const res = await fetch('/relay.js');
-      const text = await res.text();
-      return eval(text); // Hati-hati: pastikan relay.js benar-benar hanya return object
+      const text = await fetch('/relay.js').then(r => r.text());
+      return eval(text); // Relay object
     }
 
     form.addEventListener('submit', async (e) => {
@@ -63,7 +62,6 @@
       const username = form.username.value.trim().toLowerCase();
       const plan = form.plan.value;
       const specs = planSpecs[plan];
-
       const email = username + "@gmail.com";
       const password = username + Math.random().toString(16).substring(2, 6);
       const displayName = capitalize(username) + " Server";
@@ -71,7 +69,6 @@
       try {
         const config = await fetchConfig();
 
-        // Create user
         const userRes = await fetch(config.domainV2 + "/api/application/users", {
           method: "POST",
           headers: {
@@ -91,9 +88,7 @@
         if (user.errors) throw new Error(user.errors[0].detail);
         const userId = user.attributes.id;
 
-        // Get egg startup
         const eggRes = await fetch(`${config.domainV2}/api/application/nests/${config.nestidV2}/eggs/${config.eggV2}`, {
-          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: "Bearer " + config.apikeyV2
@@ -102,7 +97,6 @@
         const egg = await eggRes.json();
         if (egg.errors) throw new Error(egg.errors[0].detail);
 
-        // Create server
         const serverRes = await fetch(config.domainV2 + "/api/application/servers", {
           method: "POST",
           headers: {
@@ -113,31 +107,32 @@
             name: displayName,
             user: userId,
             egg: parseInt(config.eggV2),
-            docker_image: "ghcr.io/parkervcp/yolks:nodejs_18",
+            docker_image: config.dockerImage,
             startup: egg.attributes.startup,
-            environment: {
-              INST: "npm",
-              CMD_RUN: "npm start"
-            },
+            environment: config.environment,
             limits: {
               memory: specs.ram,
               swap: 0,
               disk: specs.disk,
-              io: 500,
+              io: config.io,
               cpu: specs.cpu
             },
-            feature_limits: { databases: 5, backups: 5, allocations: 5 },
-            deploy: { locations: [parseInt(config.locV2)], dedicated_ip: false, port_range: [] }
+            feature_limits: config.feature_limits,
+            deploy: {
+              locations: [parseInt(config.locV2)],
+              dedicated_ip: false,
+              port_range: []
+            }
           })
         });
-
         const server = await serverRes.json();
         if (server.errors) throw new Error(server.errors[0].detail);
 
         resultDiv.textContent = `✅ Panel Created:
+
 👤 Username: ${username}
-🔑 Password: ${password}
-📦 Plan: ${formatSpec(specs.ram)} RAM | ${specs.cpu}% CPU
+🔐 Password: ${password}
+📦 RAM: ${formatSpec(specs.ram)} | CPU: ${specs.cpu}%
 🌐 Host: ${config.domainV2}
 `;
         resultDiv.classList.remove('hidden');
