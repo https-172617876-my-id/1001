@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   };
 
   const config = {
-    domainV2: "xemz.my.id",
+    domainV2: "https://kenja-ganteng.kenjaapublik.my.id",
     apikeyV2: "apixxx",
     eggV2: "15",
     nestidV2: "5",
@@ -102,4 +102,5 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}
+      }
+o
