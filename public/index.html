@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Auto Panel Creator</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -13,9 +12,9 @@
       <input id="username" type="text" placeholder="Username" required class="w-full p-2 border rounded" />
       <select id="plan" required class="w-full p-2 border rounded">
         <option value="" disabled selected>Select Plan</option>
-        <option value="1gb-v2">1GB Plan</option>
-        <option value="2gb-v2">2GB Plan</option>
-        <option value="unlimited-v2">Unlimited Plan</option>
+        <option value="1gb-v2">1GB</option>
+        <option value="2gb-v2">2GB</option>
+        <option value="unlimited-v2">Unlimited</option>
       </select>
       <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Create Panel</button>
     </form>
@@ -24,26 +23,26 @@
   </div>
 
   <script>
-    const form = document.getElementById("panelForm");
-    const resultDiv = document.getElementById("result");
-    const errorDiv = document.getElementById("error");
-
     const planSpecs = {
       "1gb-v2": { ram: 1000, disk: 1000, cpu: 40 },
       "2gb-v2": { ram: 2000, disk: 2000, cpu: 60 },
       "unlimited-v2": { ram: 0, disk: 0, cpu: 0 }
     };
 
+    const form = document.getElementById("panelForm");
+    const result = document.getElementById("result");
+    const error = document.getElementById("error");
+
     async function getConfig() {
-      const response = await fetch("/relay.json");
-      if (!response.ok) throw new Error("relay.json not found!");
-      return await response.json();
+      const res = await fetch("/relay.json");
+      if (!res.ok) throw new Error("relay.json not found!");
+      return await res.json();
     }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      resultDiv.classList.add("hidden");
-      errorDiv.classList.add("hidden");
+      result.classList.add("hidden");
+      error.classList.add("hidden");
 
       const username = document.getElementById("username").value.trim().toLowerCase();
       const plan = document.getElementById("plan").value;
@@ -75,7 +74,7 @@
         if (user.errors) throw new Error(user.errors[0].detail);
         const userId = user.attributes.id;
 
-        // Get egg
+        // Get egg startup
         const eggRes = await fetch(`${config.domainV2}/api/application/nests/${config.nestidV2}/eggs/${config.eggV2}`, {
           headers: {
             Authorization: "Bearer " + config.apikeyV2,
@@ -119,18 +118,20 @@
         const server = await serverRes.json();
         if (server.errors) throw new Error(server.errors[0].detail);
 
-        resultDiv.textContent = `✅ Panel Created!
+        result.textContent = `✅ Panel Created!
 
 👤 Username: ${username}
 🔐 Password: ${password}
 🖥️ Server: ${server.attributes.name}
-💾 RAM: ${specs.ram}MB | Disk: ${specs.disk}MB | CPU: ${specs.cpu}%
+📦 RAM: ${specs.ram}MB
+💾 Disk: ${specs.disk}MB
+⚙️ CPU: ${specs.cpu}%
 🌐 Host: ${config.domainV2}
 `;
-        resultDiv.classList.remove("hidden");
+        result.classList.remove("hidden");
       } catch (err) {
-        errorDiv.textContent = "❌ Error: " + err.message;
-        errorDiv.classList.remove("hidden");
+        error.textContent = "❌ Error: " + err.message;
+        error.classList.remove("hidden");
       }
     });
   </script>
