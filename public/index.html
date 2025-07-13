@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Auto Panel Creator (Client Side)</title>
+  <title>Auto Panel Creator (Client-side)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/relay.js"></script>
+  <script src="/relay.js"></script> <!-- langsung load config -->
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
   <div class="max-w-md w-full bg-white p-6 rounded shadow">
@@ -120,6 +120,7 @@
 🌐 Host: ${config.domainV2}
 `;
         result.classList.remove("hidden");
+
       } catch (err) {
         error.textContent = "❌ Error: " + err.message;
         error.classList.remove("hidden");
