@@ -28,6 +28,18 @@
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error");
 
+    const planSpecs = {
+      "1gb-v2": { ram: 1000, disk: 1000, cpu: 40 },
+      "2gb-v2": { ram: 2000, disk: 2000, cpu: 60 },
+      "unlimited-v2": { ram: 0, disk: 0, cpu: 0 }
+    };
+
+    async function getConfig() {
+      const response = await fetch("/relay.json");
+      if (!response.ok) throw new Error("relay.json not found!");
+      return await response.json();
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       resultDiv.classList.add("hidden");
@@ -35,39 +47,88 @@
 
       const username = document.getElementById("username").value.trim().toLowerCase();
       const plan = document.getElementById("plan").value;
-
-      resultDiv.textContent = "⏳ Creating panel, please wait...";
-      resultDiv.classList.remove("hidden");
+      const specs = planSpecs[plan];
+      const email = username + "@gmail.com";
+      const password = username + "123";
 
       try {
-        const res = await fetch("/api/relay", {
+        const config = await getConfig();
+
+        // Create user
+        const userRes = await fetch(config.domainV2 + "/api/application/users", {
           method: "POST",
           headers: {
+            Authorization: "Bearer " + config.apikeyV2,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ username, plan })
+          body: JSON.stringify({
+            email,
+            username,
+            first_name: username,
+            last_name: "Server",
+            password,
+            language: "en"
+          })
         });
 
-        const data = await res.json();
+        const user = await userRes.json();
+        if (user.errors) throw new Error(user.errors[0].detail);
+        const userId = user.attributes.id;
 
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "Unknown error occurred.");
-        }
+        // Get egg
+        const eggRes = await fetch(`${config.domainV2}/api/application/nests/${config.nestidV2}/eggs/${config.eggV2}`, {
+          headers: {
+            Authorization: "Bearer " + config.apikeyV2,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const egg = await eggRes.json();
+        if (egg.errors) throw new Error(egg.errors[0].detail);
+
+        // Create server
+        const serverRes = await fetch(config.domainV2 + "/api/application/servers", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + config.apikeyV2,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: username + " Server",
+            user: userId,
+            egg: parseInt(config.eggV2),
+            docker_image: config.dockerImage,
+            startup: egg.attributes.startup,
+            environment: config.environment,
+            limits: {
+              memory: specs.ram,
+              swap: 0,
+              disk: specs.disk,
+              io: config.io,
+              cpu: specs.cpu
+            },
+            feature_limits: config.feature_limits,
+            deploy: {
+              locations: [parseInt(config.locV2)],
+              dedicated_ip: false,
+              port_range: []
+            }
+          })
+        });
+
+        const server = await serverRes.json();
+        if (server.errors) throw new Error(server.errors[0].detail);
 
         resultDiv.textContent = `✅ Panel Created!
 
-👤 Username: ${data.user.username}
-🆔 User ID: ${data.user.id}
-
-🖥️ Server Name: ${data.server.name}
-🧠 RAM: ${data.server.limits.memory} MB
-💾 Disk: ${data.server.limits.disk} MB
-⚙️ CPU: ${data.server.limits.cpu}%
-
-🌐 Host: ${data.server.hostname || "Panel"}
+👤 Username: ${username}
+🔐 Password: ${password}
+🖥️ Server: ${server.attributes.name}
+💾 RAM: ${specs.ram}MB | Disk: ${specs.disk}MB | CPU: ${specs.cpu}%
+🌐 Host: ${config.domainV2}
 `;
+        resultDiv.classList.remove("hidden");
       } catch (err) {
-        resultDiv.classList.add("hidden");
         errorDiv.textContent = "❌ Error: " + err.message;
         errorDiv.classList.remove("hidden");
       }
