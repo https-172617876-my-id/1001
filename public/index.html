@@ -2,31 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Auto Panel Creator</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex items-center justify-center">
-  <div class="max-w-md w-full bg-white rounded shadow p-6">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center font-sans">
+  <div class="max-w-md w-full bg-white p-6 rounded shadow">
     <h2 class="text-2xl font-bold text-center text-indigo-600 mb-4">Create Your Panel</h2>
-    <form id="panelForm" class="space-y-4">
-      <input id="username" type="text" placeholder="Username" required class="w-full p-2 border border-gray-300 rounded" />
-      <select id="plan" required class="w-full p-2 border border-gray-300 rounded">
+    <form id="form" class="space-y-4">
+      <input id="username" type="text" placeholder="Username" required class="w-full p-2 border rounded" />
+      <select id="plan" required class="w-full p-2 border rounded">
         <option value="" disabled selected>Select Plan</option>
-        <option value="1gb-v2">1GB Plan</option>
-        <option value="2gb-v2">2GB Plan</option>
-        <option value="unlimited-v2">Unlimited Plan</option>
+        <option value="1gb-v2">1GB</option>
+        <option value="2gb-v2">2GB</option>
+        <option value="unlimited-v2">Unlimited</option>
       </select>
-      <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">Create Panel</button>
+      <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700">Create Panel</button>
     </form>
-    <pre id="result" class="text-sm text-green-600 whitespace-pre-wrap mt-4 hidden"></pre>
-    <div id="error" class="text-sm text-red-600 mt-4 hidden"></div>
+    <pre id="result" class="text-sm mt-4 text-green-600 hidden whitespace-pre-wrap"></pre>
+    <div id="error" class="text-sm mt-4 text-red-600 hidden"></div>
   </div>
 
   <script>
-    const form = document.getElementById("panelForm");
+    const form = document.getElementById("form");
     const resultDiv = document.getElementById("result");
     const errorDiv = document.getElementById("error");
+
+    const planSpecs = {
+      "1gb-v2": { ram: 1000, disk: 1000, cpu: 40 },
+      "2gb-v2": { ram: 2000, disk: 2000, cpu: 60 },
+      "unlimited-v2": { ram: 0, disk: 0, cpu: 0 }
+    };
+
+    async function getConfig() {
+      const res = await fetch("/relay.js");
+      const text = await res.text();
+      return eval(text); // HARUS object literal dalam ()
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -35,44 +46,103 @@
 
       const username = document.getElementById("username").value.trim().toLowerCase();
       const plan = document.getElementById("plan").value;
-
-      resultDiv.textContent = "Creating panel...";
-      resultDiv.classList.remove("hidden");
+      const specs = planSpecs[plan];
+      const email = username + "@gmail.com";
+      const password = username + "123";
 
       try {
-        const response = await fetch("/api/relay", {
+        const config = await getConfig();
+
+        // Create user
+        const userRes = await fetch(config.domainV2 + "/api/application/users", {
           method: "POST",
           headers: {
+            Authorization: "Bearer " + config.apikeyV2,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ username, plan })
+          body: JSON.stringify({
+            email,
+            username,
+            first_name: username,
+            last_name: "Server",
+            password,
+            language: "en"
+          })
         });
 
-        const data = await response.json();
-
-        if (data.error) {
-          resultDiv.classList.add("hidden");
-          errorDiv.textContent = "❌ Error: " + data.error;
-          errorDiv.classList.remove("hidden");
-          return;
+        if (!userRes.ok) {
+          const err = await userRes.json();
+          throw new Error(err.errors?.[0]?.detail || "Gagal membuat user.");
         }
+
+        const user = await userRes.json();
+        const userId = user.attributes.id;
+
+        // Get egg startup
+        const eggRes = await fetch(`${config.domainV2}/api/application/nests/${config.nestidV2}/eggs/${config.eggV2}`, {
+          headers: {
+            Authorization: "Bearer " + config.apikeyV2,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!eggRes.ok) {
+          const err = await eggRes.json();
+          throw new Error(err.errors?.[0]?.detail || "Gagal mendapatkan egg.");
+        }
+
+        const egg = await eggRes.json();
+
+        // Create server
+        const serverRes = await fetch(config.domainV2 + "/api/application/servers", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + config.apikeyV2,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: username + " Server",
+            user: userId,
+            egg: parseInt(config.eggV2),
+            docker_image: config.dockerImage,
+            startup: egg.attributes.startup,
+            environment: config.environment,
+            limits: {
+              memory: specs.ram,
+              swap: 0,
+              disk: specs.disk,
+              io: config.io,
+              cpu: specs.cpu
+            },
+            feature_limits: config.feature_limits,
+            deploy: {
+              locations: [parseInt(config.locV2)],
+              dedicated_ip: false,
+              port_range: []
+            }
+          })
+        });
+
+        if (!serverRes.ok) {
+          const err = await serverRes.json();
+          throw new Error(err.errors?.[0]?.detail || "Gagal membuat server.");
+        }
+
+        const server = await serverRes.json();
 
         resultDiv.textContent = `✅ Panel Created!
 
-👤 Username: ${data.user.username}
-🆔 User ID: ${data.user.id}
+👤 Username: ${username}
+🔐 Password: ${password}
+🆔 User ID: ${userId}
 
-🖥️ Server: ${data.server.name}
-📦 RAM: ${data.server.limits.memory}MB
-💾 Disk: ${data.server.limits.disk}MB
-⚙️ CPU: ${data.server.limits.cpu}%
-🔐 Password: ${username}123
-
-🌐 Host: ${data.server.hostname || 'panel'} (${data.server.uuid})
+💾 Plan: ${specs.ram}MB RAM | ${specs.disk}MB Disk | ${specs.cpu}% CPU
+🌐 Panel: ${config.domainV2}
 `;
+        resultDiv.classList.remove("hidden");
+
       } catch (err) {
-        resultDiv.classList.add("hidden");
-        errorDiv.textContent = "❌ Unexpected Error: " + err.message;
+        errorDiv.textContent = "❌ Error: " + err.message;
         errorDiv.classList.remove("hidden");
       }
     });
