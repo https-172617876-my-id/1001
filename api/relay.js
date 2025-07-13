@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   const config = {
     domainV2: "https://kenja-ganteng.kenjaapublik.my.id",
-    apikeyV2: "apixxx",
+    apikeyV2: "ptla_RKC13A19K8mEKJrJidUtlKyFZrkh1dkTqCGymPvxM5Z",
     eggV2: "15",
     nestidV2: "5",
     locV2: "1",
