@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   };
 
   const config = {
-    domainV2: "https://kenja-ganteng.kenjaapublik.my.id",
+    domainV2: "xemz.my.id",
     apikeyV2: "apixxx",
     eggV2: "15",
     nestidV2: "5",
